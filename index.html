@@ -129,8 +129,9 @@
 
         .app-brand-copy {
             display: grid;
-            gap: 2px;
+            gap: 4px;
             min-width: 0;
+            justify-content: center;
         }
 
         .app-kicker {
@@ -143,7 +144,7 @@
 
         .app-title {
             color: var(--on-dark);
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
             letter-spacing: -0.02em;
             white-space: nowrap;
@@ -317,6 +318,54 @@
             color: var(--stone);
         }
 
+        #stampUploadArea {
+            min-height: 106px;
+            padding: 14px;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        #pdfUploadArea {
+            min-height: 106px;
+            padding: 14px;
+            gap: 6px;
+        }
+
+        #stampUploadArea .upload-icon,
+        #pdfUploadArea .upload-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            font-size: 20px;
+        }
+
+        #stampUploadArea .upload-text,
+        #pdfUploadArea .upload-text {
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        #stampUploadArea .upload-text small {
+            margin-top: 2px;
+            font-size: 12px;
+        }
+
+        #stampUploadArea.has-preview .upload-icon,
+        #stampUploadArea.has-preview .upload-text {
+            display: none;
+        }
+
+        .upload-preview-image {
+            display: none;
+            max-width: 100%;
+            max-height: 86px;
+            object-fit: contain;
+        }
+
+        #stampUploadArea.has-preview .upload-preview-image {
+            display: block;
+        }
+
         .preview-container {
             width: 132px;
             height: 132px;
@@ -390,6 +439,15 @@
 
         .input-group {
             margin-bottom: 16px;
+        }
+
+        .input-group.hidden-control {
+            display: none;
+        }
+
+        .seal-action-stack {
+            display: grid;
+            gap: 12px;
         }
 
         .input-label {
@@ -471,30 +529,52 @@
         }
 
         .stamp-list {
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 16px;
+            margin-top: 12px;
             display: grid;
-            gap: 10px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
         }
 
         .stamp-item {
-            display: flex;
+            min-width: 0;
+            min-height: 102px;
+            display: grid;
+            grid-template-rows: 1fr auto;
             align-items: center;
-            gap: 12px;
-            padding: 12px;
+            gap: 6px;
+            padding: 8px;
             border-radius: 14px;
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(246, 245, 243, 0.96));
             border: 1px solid var(--hairline);
             box-shadow: 0 10px 20px rgba(7, 15, 36, 0.05);
         }
 
+        .stamp-item:not(.empty) {
+            cursor: pointer;
+        }
+
+        .stamp-item:not(.empty):hover {
+            border-color: rgba(86, 69, 212, 0.42);
+            box-shadow: 0 12px 24px rgba(86, 69, 212, 0.1);
+        }
+
+        .stamp-item.active {
+            border-color: rgba(86, 69, 212, 0.55);
+            box-shadow: 0 12px 24px rgba(86, 69, 212, 0.12);
+        }
+
+        .stamp-item.empty {
+            color: var(--stone);
+            background: rgba(255, 255, 255, 0.58);
+            border-style: dashed;
+            box-shadow: none;
+        }
+
         .stamp-item-preview {
-            width: 58px;
-            height: 58px;
+            width: 100%;
+            height: 54px;
             display: grid;
             place-items: center;
-            flex-shrink: 0;
             border-radius: 12px;
             background:
                 linear-gradient(135deg, rgba(230, 224, 245, 0.6), rgba(220, 236, 250, 0.6)),
@@ -503,44 +583,45 @@
             overflow: hidden;
         }
 
+        .stamp-item.empty .stamp-item-preview {
+            background: rgba(250, 249, 247, 0.85);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         .stamp-item-info {
-            flex: 1;
             min-width: 0;
+            text-align: center;
         }
 
         .stamp-item-name {
-            margin-bottom: 4px;
             color: var(--ink);
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
-            line-height: 1.45;
-            word-break: break-all;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .stamp-item-size {
             color: var(--steel);
-            font-size: 12px;
+            font-size: 10px;
         }
 
         .stamp-item-actions {
-            display: flex;
-            gap: 8px;
+            display: grid;
+            gap: 5px;
         }
 
         .stamp-item-btn {
-            padding: 7px 12px;
+            padding: 5px 0;
             border: 1px solid transparent;
             border-radius: 9999px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             white-space: nowrap;
-        }
-
-        .stamp-item-btn.use {
-            color: var(--on-primary);
-            background: linear-gradient(135deg, var(--primary), var(--primary-deep));
-            box-shadow: 0 10px 18px rgba(86, 69, 212, 0.22);
         }
 
         .stamp-item-btn.delete {
@@ -633,9 +714,22 @@
             flex: 0 0 auto;
         }
 
+        .left-panel .workspace-header {
+            position: sticky;
+            top: -24px;
+            z-index: 10;
+            margin: -24px -24px 18px;
+            padding: 18px 24px 14px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 245, 244, 0.94)),
+                var(--surface);
+            border-bottom: 1px solid var(--hairline);
+            backdrop-filter: blur(10px);
+        }
+
         .workspace-eyebrow {
             color: var(--steel);
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.12em;
@@ -644,7 +738,7 @@
         .workspace-title {
             margin-top: 6px;
             color: var(--ink);
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 700;
             letter-spacing: -0.03em;
         }
@@ -717,6 +811,19 @@
             position: absolute;
             inset: 0;
             pointer-events: none;
+        }
+
+        .coordinate-reference-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff2d2d;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 0 2px rgba(255, 45, 45, 0.35), 0 2px 6px rgba(7, 15, 36, 0.25);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 8;
         }
 
         .stamp-indicator {
@@ -794,12 +901,11 @@
             }
 
             .stamp-item {
-                flex-direction: column;
-                align-items: stretch;
+                align-items: center;
             }
 
             .stamp-item-actions {
-                justify-content: flex-end;
+                justify-content: initial;
             }
         }
     </style>
@@ -810,7 +916,6 @@
             <div class="app-brand">
                 <div class="app-mark">N</div>
                 <div class="app-brand-copy">
-                    <div class="app-kicker">临时 PDF 工具</div>
                     <div class="app-title">PDF 盖章工具</div>
                     <div class="app-summary">快速导入文件、设置印章、预览落点。</div>
                 </div>
@@ -819,12 +924,19 @@
 
         <div class="main-container">
             <aside class="left-panel">
+                <div class="workspace-header">
+                    <div>
+                        <div class="workspace-eyebrow">Tool workspace</div>
+                        <div class="workspace-title">功能区</div>
+                    </div>
+                </div>
+
             <div class="card">
                 <div class="card-title">印章 (Stamp)</div>
-                <div class="card-subtitle">上传透明背景的 PNG 印章，支持拖拽上传和本地缓存。</div>
                 <div class="upload-area" id="stampUploadArea">
                     <div class="upload-icon">🔐</div>
                     <div class="upload-text">拖拽或点击上传 PNG 印章<br><small>（透明背景）</small></div>
+                    <img class="upload-preview-image" id="stampUploadPreview" alt="当前印章预览">
                 </div>
                 <div class="preview-container hidden" id="stampPreviewContainer">
                     <img id="stampPreview" alt="印章预览">
@@ -835,7 +947,6 @@
 
             <div class="card">
                 <div class="card-title">文件 (PDF)</div>
-                <div class="card-subtitle">导入文档后，右侧会显示按页渲染的预览与坐标参考。</div>
                 <div class="upload-area" id="pdfUploadArea">
                     <div class="upload-icon">📄</div>
                     <div class="upload-text">拖拽或点击上传 PDF 文件</div>
@@ -843,53 +954,43 @@
                 <input type="file" id="pdfInput" accept="application/pdf" style="display:none">
                 <div id="pdfInfo" class="pdf-info hidden">
                     <div class="pdf-info-item"><span class="pdf-info-label">文件名：</span><span id="pdfFileName"></span></div>
-                    <div class="pdf-info-item"><span class="pdf-info-label">页数：</span><span id="pdfPageCount"></span></div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">骑缝章设置</div>
-                <div class="card-subtitle">选择对齐位置和印章高度，适合沿页边跨页处理。</div>
-                <div class="input-group">
-                    <label class="input-label">盖章位置</label>
-                    <div class="position-selector">
-                        <button class="position-btn" data-position="0.33">左侧 1/3</button>
-                        <button class="position-btn active" data-position="0.5">中间 1/2</button>
-                        <button class="position-btn" data-position="0.67">右侧 2/3</button>
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label class="input-label">印章高度 (mm)</label>
-                    <input type="number" class="input-field" id="stampedHeight" value="40" min="10" max="200">
-                </div>
-                <button class="btn btn-primary" id="generateStampsBtn" disabled>生成骑缝章</button>
-            </div>
-
-            <div class="card">
-                <div class="card-title">完整章设置</div>
-                <div class="card-subtitle">在单页上定位完整章，支持页码、X / Y 坐标和尺寸输入。</div>
-                <div class="input-group">
+                <div class="card-title">盖章设置</div>
+                <div class="input-group hidden-control">
                     <label class="input-label">盖章页码</label>
                     <input type="number" class="input-field" id="singlePageNum" value="1" min="1">
                 </div>
-                <div class="input-group">
+                <div class="input-group hidden-control">
                     <label class="input-label">X 坐标 (mm)</label>
                     <input type="number" class="input-field" id="singleX" value="100" min="0">
                 </div>
-                <div class="input-group">
+                <div class="input-group hidden-control">
                     <label class="input-label">Y 坐标 (mm)</label>
                     <input type="number" class="input-field" id="singleY" value="100" min="0">
                 </div>
                 <div class="input-group">
                     <label class="input-label">印章尺寸 (mm)</label>
-                    <input type="number" class="input-field" id="singleStampSize" value="40" min="10" max="200">
+                    <input type="number" class="input-field" id="stampedHeight" value="40" min="10" max="200">
                 </div>
-                <button class="btn btn-secondary" id="addSingleStampBtn" disabled>添加完整章</button>
+                <div class="input-group">
+                    <label class="input-label">骑缝章位置</label>
+                    <div class="position-selector">
+                        <button class="position-btn" data-position="0.33">右侧 1/3</button>
+                        <button class="position-btn active" data-position="0.5">中间 1/2</button>
+                        <button class="position-btn" data-position="0.67">右侧 2/3</button>
+                    </div>
+                </div>
+                <div class="seal-action-stack">
+                    <button class="btn btn-primary" id="generateStampsBtn" disabled>盖骑缝章</button>
+                    <button class="btn btn-primary" id="addSingleStampBtn" disabled>盖完整章</button>
+                </div>
             </div>
 
             <div class="card">
                 <div class="card-title">操作区</div>
-                <div class="card-subtitle">清空印章或导出最终 PDF，按钮状态会随内容自动启用。</div>
                 <button class="btn btn-danger" id="clearAllBtn" disabled>清空所有印章</button>
                 <button class="btn btn-primary" id="exportPdfBtn" disabled style="margin-top:12px;">导出 PDF</button>
             </div>
@@ -899,15 +1000,14 @@
                 <div class="workspace-header">
                     <div>
                         <div class="workspace-eyebrow">Document workspace</div>
-                        <div class="workspace-title">预览与坐标</div>
+                        <div class="workspace-title">预览区</div>
                     </div>
-                    <div class="workspace-hint">页面会自动按窗口大小缩放</div>
                 </div>
 
             <div class="toolbar">
                 <div class="toolbar-group">
                     <span class="toolbar-label">坐标系：</span>
-                    <button class="toggle-btn active" id="toggleCoordinate">显示/隐藏</button>
+                    <button class="toggle-btn" id="toggleCoordinate">显示/隐藏</button>
                 </div>
                 <div class="toolbar-group">
                     <span class="toolbar-label">页码：</span>
@@ -946,10 +1046,12 @@
             pageCount: 0,
             pageInfos: [],
             stampsOnPages: [],
-            showCoordinate: true,
+            showCoordinate: false,
             stampPosition: 0.5,
             scale: 1,
-            dpi: 96
+            dpi: 96,
+            coordinateLocked: false,
+            coordinateReferencePoint: null
         };
 
         const MM_PER_INCH = 25.4;
@@ -957,6 +1059,7 @@
         const stampInput = document.getElementById('stampInput');
         const stampPreviewContainer = document.getElementById('stampPreviewContainer');
         const stampPreview = document.getElementById('stampPreview');
+        const stampUploadPreview = document.getElementById('stampUploadPreview');
         const stampList = document.getElementById('stampList');
         const pdfUploadArea = document.getElementById('pdfUploadArea');
         const pdfInput = document.getElementById('pdfInput');
@@ -969,6 +1072,12 @@
         const loadingOverlay = document.getElementById('loadingOverlay');
         const loadingText = document.getElementById('loadingText');
         const toggleCoordinateBtn = document.getElementById('toggleCoordinate');
+        const pdfContainer = document.getElementById('pdfContainer');
+        const gotoPageInput = document.getElementById('gotoPage');
+        const singlePageNumInput = document.getElementById('singlePageNum');
+        const singleXInput = document.getElementById('singleX');
+        const singleYInput = document.getElementById('singleY');
+        let pageSyncFrame = null;
 
         function pxToMm(px, dpi = 96) {
             return px / dpi * MM_PER_INCH;
@@ -992,17 +1101,17 @@
                 const saved = localStorage.getItem('pdfStampStamps');
                 if (saved) {
                     const stamps = JSON.parse(saved);
-                    stamps.forEach(data => {
+                    stamps.slice(0, 3).forEach(data => {
                         if (data.data) {
                             state.stamps.push(data);
                         }
                     });
-                    renderStampList();
                     if (state.stamps.length > 0) {
                         state.currentStamp = state.stamps[0];
                         showStampPreview(state.currentStamp);
                     }
                 }
+                renderStampList();
             } catch (e) {
                 console.error('加载印章失败:', e);
             }
@@ -1026,35 +1135,63 @@
 
         function renderStampList() {
             stampList.innerHTML = '';
-            state.stamps.forEach((stamp, index) => {
+            for (let index = 0; index < 3; index++) {
+                const stamp = state.stamps[index];
                 const item = document.createElement('div');
-                item.className = 'stamp-item';
-                item.innerHTML = `
-                    <div class="stamp-item-preview">
-                        <img src="${stamp.data}" alt="${stamp.name}">
-                    </div>
-                    <div class="stamp-item-info">
-                        <div class="stamp-item-name">${stamp.name}</div>
-                        <div class="stamp-item-size">${(stamp.size / 1024).toFixed(1)} KB</div>
-                    </div>
-                    <div class="stamp-item-actions">
-                        <button class="stamp-item-btn use" data-index="${index}">使用</button>
-                        <button class="stamp-item-btn delete" data-index="${index}">删除</button>
-                    </div>
-                `;
+                if (stamp) {
+                    item.className = `stamp-item${stamp === state.currentStamp ? ' active' : ''}`;
+                    item.dataset.index = index;
+                    item.setAttribute('role', 'button');
+                    item.setAttribute('tabindex', '0');
+                    item.innerHTML = `
+                        <div class="stamp-item-preview">
+                            <img src="${stamp.data}" alt="${stamp.name}">
+                        </div>
+                        <div class="stamp-item-info">
+                            <div class="stamp-item-name">${stamp.name}</div>
+                            <div class="stamp-item-size">${(stamp.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                        <div class="stamp-item-actions">
+                            <button class="stamp-item-btn delete" data-index="${index}">删除</button>
+                        </div>
+                    `;
+                } else {
+                    item.className = 'stamp-item empty';
+                    item.innerHTML = `
+                        <div class="stamp-item-preview">空位</div>
+                        <div class="stamp-item-info">
+                            <div class="stamp-item-name">印章${index + 1}</div>
+                        </div>
+                    `;
+                }
                 stampList.appendChild(item);
-            });
+            }
 
-            stampList.querySelectorAll('.use').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const index = parseInt(e.target.dataset.index);
+            stampList.querySelectorAll('.stamp-item:not(.empty)').forEach(item => {
+                const selectStamp = () => {
+                    const index = parseInt(item.dataset.index);
                     state.currentStamp = state.stamps[index];
                     showStampPreview(state.currentStamp);
+                    renderStampList();
+                };
+
+                item.addEventListener('mousedown', selectStamp);
+                item.addEventListener('click', selectStamp);
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectStamp();
+                    }
                 });
             });
 
             stampList.querySelectorAll('.delete').forEach(btn => {
+                btn.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                });
+
                 btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const index = parseInt(e.target.dataset.index);
                     state.stamps.splice(index, 1);
                     saveStampsToStorage();
@@ -1065,8 +1202,9 @@
                     } else {
                         state.currentStamp = null;
                         stampPreviewContainer.classList.add('hidden');
-                        stampUploadArea.classList.remove('hidden');
                         stampUploadArea.classList.remove('has-file');
+                        stampUploadArea.classList.remove('has-preview');
+                        stampUploadPreview.removeAttribute('src');
                     }
                 });
             });
@@ -1075,9 +1213,10 @@
         function showStampPreview(stamp) {
             if (!stamp) return;
             stampPreview.src = stamp.data;
-            stampPreviewContainer.classList.remove('hidden');
-            stampUploadArea.classList.add('hidden');
+            stampUploadPreview.src = stamp.data;
+            stampPreviewContainer.classList.add('hidden');
             stampUploadArea.classList.add('has-file');
+            stampUploadArea.classList.add('has-preview');
         }
 
         stampUploadArea.addEventListener('click', () => stampInput.click());
@@ -1113,6 +1252,11 @@
 
         async function loadStampFile(file) {
             return new Promise((resolve) => {
+                if (state.stamps.length >= 3) {
+                    alert('最多只能缓存 3 个印章，请先删除一个再上传。');
+                    resolve();
+                    return;
+                }
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
@@ -1197,15 +1341,19 @@
                 state.pageCount = state.pdfDoc.numPages;
                 state.stampsOnPages = [];
                 state.pdfFileName = file.name;
+                state.coordinateLocked = false;
+                state.coordinateReferencePoint = null;
                 pdfUploadArea.classList.add('has-file');
 
                 document.getElementById('pdfFileName').textContent = file.name;
-                document.getElementById('pdfPageCount').textContent = state.pageCount;
                 document.getElementById('totalPages').textContent = state.pageCount;
-                document.getElementById('singlePageNum').max = state.pageCount;
+                singlePageNumInput.max = state.pageCount;
+                gotoPageInput.max = state.pageCount;
+                syncPageInputs(1);
                 pdfInfo.classList.remove('hidden');
 
                 await renderAllPages();
+                updatePageInputsFromPreview();
                 updateButtons();
             } catch (e) {
                 alert('PDF 加载失败: ' + e.message);
@@ -1290,14 +1438,109 @@
                 const yMm = pxToMm(y / displayScale, 72);
                 document.getElementById('currentCoord').textContent =
                     `X: ${xMm.toFixed(1)}mm, Y: ${yMm.toFixed(1)}mm`;
+                if (!state.coordinateLocked) {
+                    setSingleStampTarget(pageNum, xMm, yMm);
+                }
+            };
+
+            const lockCoord = (e) => {
+                const rect = wrapper.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+
+                const xMm = pxToMm(x / displayScale, 72);
+                const yMm = pxToMm(y / displayScale, 72);
+                state.coordinateLocked = true;
+                document.getElementById('currentCoord').textContent =
+                    `X: ${xMm.toFixed(1)}mm, Y: ${yMm.toFixed(1)}mm`;
+                setSingleStampTarget(pageNum, xMm, yMm);
+                setCoordinateReferencePoint(pageNum, xMm, yMm);
             };
 
             wrapper.addEventListener('mousemove', updateCoord);
+            wrapper.addEventListener('click', lockCoord);
             wrapper.addEventListener('mouseleave', () => {
                 document.getElementById('currentCoord').textContent = 'X: --, Y: --';
             });
 
             pdfPages.appendChild(wrapper);
+            renderCoordinateReferencePoint(pageNum);
+        }
+
+        function syncPageInputs(pageNum) {
+            if (!pageNum || pageNum < 1 || pageNum > state.pageCount) return;
+            const value = String(pageNum);
+            gotoPageInput.value = value;
+            singlePageNumInput.value = value;
+        }
+
+        function setSingleStampTarget(pageNum, xMm, yMm) {
+            syncPageInputs(pageNum);
+            singleXInput.value = xMm.toFixed(1);
+            singleYInput.value = yMm.toFixed(1);
+        }
+
+        function setCoordinateReferencePoint(pageNum, xMm, yMm) {
+            state.coordinateReferencePoint = { pageNum, xMm, yMm };
+            document.querySelectorAll('.coordinate-reference-point').forEach(point => point.remove());
+            renderCoordinateReferencePoint(pageNum);
+        }
+
+        function clearCoordinateReferencePoint() {
+            state.coordinateReferencePoint = null;
+            document.querySelectorAll('.coordinate-reference-point').forEach(point => point.remove());
+        }
+
+        function renderCoordinateReferencePoint(pageNum) {
+            const point = state.coordinateReferencePoint;
+            if (!point || point.pageNum !== pageNum) return;
+
+            const overlay = document.querySelector(`.page-overlay[data-page-num="${pageNum}"]`);
+            const pageInfo = state.pageInfos[pageNum];
+            if (!overlay || !pageInfo) return;
+
+            const marker = document.createElement('div');
+            marker.className = 'coordinate-reference-point';
+            marker.style.left = (mmToPx(point.xMm, 72) * pageInfo.scale) + 'px';
+            marker.style.top = (mmToPx(point.yMm, 72) * pageInfo.scale) + 'px';
+            overlay.appendChild(marker);
+        }
+
+        function getCurrentPreviewPage() {
+            if (!state.pdfDoc || state.pageCount === 0) return null;
+
+            const containerRect = pdfContainer.getBoundingClientRect();
+            const targetY = containerRect.top + Math.min(containerRect.height * 0.3, 180);
+            let closestPage = null;
+            let closestDistance = Infinity;
+
+            document.querySelectorAll('.pdf-page-wrapper').forEach((pageEl) => {
+                const rect = pageEl.getBoundingClientRect();
+                if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) return;
+
+                const distance = Math.abs(rect.top - targetY);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestPage = parseInt(pageEl.id.replace('page-', ''), 10);
+                }
+            });
+
+            return closestPage;
+        }
+
+        function updatePageInputsFromPreview() {
+            if (state.coordinateLocked) return;
+            const currentPage = getCurrentPreviewPage();
+            if (currentPage) syncPageInputs(currentPage);
+        }
+
+        function schedulePageInputSync() {
+            if (pageSyncFrame) cancelAnimationFrame(pageSyncFrame);
+            pageSyncFrame = requestAnimationFrame(() => {
+                pageSyncFrame = null;
+                updatePageInputsFromPreview();
+            });
         }
 
         function drawRuler(overlay, width, height, pageWidth, pageHeight) {
@@ -1437,7 +1680,7 @@
                 const stampAspect = fullStampImg.width / fullStampImg.height;
                 const stampWidthMm = stampHeightMm * stampAspect;
 
-                state.stampsOnPages = [];
+                state.stampsOnPages = state.stampsOnPages.filter(stamp => !stamp.isSaddle);
 
                 for (let pageNum = 1; pageNum <= state.pageCount; pageNum++) {
                     const pageInfo = state.pageInfos[pageNum];
@@ -1498,10 +1741,10 @@
         addSingleStampBtn.addEventListener('click', () => {
             if (!state.currentStamp || !state.pdfDoc) return;
 
-            const pageNum = parseInt(document.getElementById('singlePageNum').value);
-            const xMm = parseFloat(document.getElementById('singleX').value);
-            const yMm = parseFloat(document.getElementById('singleY').value);
-            const sizeMm = parseFloat(document.getElementById('singleStampSize').value) || 40;
+            const pageNum = parseInt(singlePageNumInput.value);
+            const xMm = parseFloat(singleXInput.value);
+            const yMm = parseFloat(singleYInput.value);
+            const sizeMm = parseFloat(document.getElementById('stampedHeight').value) || 40;
 
             if (pageNum < 1 || pageNum > state.pageCount) {
                 alert('页码超出范围');
@@ -1533,6 +1776,7 @@
                 isSingle: true
             });
 
+            clearCoordinateReferencePoint();
             renderStampsOnPages();
             updateButtons();
         });
@@ -1544,6 +1788,35 @@
                 img.onerror = reject;
                 img.src = src;
             });
+        }
+
+        async function savePdfToDesktop(blob, outputFileName) {
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: outputFileName,
+                        startIn: 'desktop',
+                        types: [{
+                            description: 'PDF 文件',
+                            accept: { 'application/pdf': ['.pdf'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return true;
+                } catch (e) {
+                    if (e.name === 'AbortError') return false;
+                }
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = outputFileName;
+            a.click();
+            URL.revokeObjectURL(url);
+            return true;
         }
 
         function renderStampsOnPages() {
@@ -1615,6 +1888,10 @@
                 origX = element.offsetLeft;
                 origY = element.offsetTop;
                 element.style.opacity = '0.7';
+                e.stopPropagation();
+            });
+
+            element.addEventListener('click', (e) => {
                 e.stopPropagation();
             });
 
@@ -1821,14 +2098,9 @@
                 const outputFileName = '（已盖章）' + fileNameWithoutExt + '.pdf';
                 
                 const blob = new Blob([imagePdfBytes], { type: 'application/pdf' });
-                const url = URL.createObjectURL(blob);
+                const saved = await savePdfToDesktop(blob, outputFileName);
+                if (!saved) return;
 
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = outputFileName;
-                a.click();
-
-                URL.revokeObjectURL(url);
                 alert('导出成功！PDF已转换为图片格式，内容不可编辑。');
             } catch (e) {
                 console.error('导出失败:', e);
@@ -1845,8 +2117,6 @@
             toggleCoordinateBtn.classList.toggle('active', state.showCoordinate);
             if (state.pdfDoc) renderAllPages().then(renderStampsOnPages);
         });
-
-        toggleCoordinateBtn.classList.add('active');
 
         function updateButtons() {
             const hasStamp = !!state.currentStamp;
@@ -1874,9 +2144,13 @@
             loadingOverlay.classList.add('hidden');
         }
 
-        document.getElementById('gotoPage').addEventListener('change', (e) => {
+        pdfContainer.addEventListener('scroll', schedulePageInputSync);
+        window.addEventListener('resize', schedulePageInputSync);
+
+        gotoPageInput.addEventListener('change', (e) => {
             const pageNum = parseInt(e.target.value);
             if (pageNum >= 1 && pageNum <= state.pageCount) {
+                syncPageInputs(pageNum);
                 const element = document.getElementById(`page-${pageNum}`);
                 if (element) {
                     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
