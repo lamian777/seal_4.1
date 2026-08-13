@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 盖章工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <style>
+        :root {
+            --primary: #5645d4;
+            --primary-pressed: #4534b3;
+            --primary-deep: #3a2a99;
+            --on-primary: #ffffff;
+            --brand-navy: #0a1530;
+            --brand-navy-deep: #070f24;
+            --brand-navy-mid: #1a2a52;
+            --brand-pink: #ff64c8;
+            --brand-purple: #7b3ff2;
+            --brand-orange: #dd5b00;
+            --card-tint-peach: #ffe8d4;
+            --card-tint-rose: #fde0ec;
+            --card-tint-mint: #d9f3e1;
+            --card-tint-lavender: #e6e0f5;
+            --card-tint-sky: #dcecfa;
+            --card-tint-yellow: #fef7d6;
+            --card-tint-cream: #f8f5e8;
+            --canvas: #ffffff;
+            --surface: #f6f5f4;
+            --surface-soft: #fafaf9;
+            --hairline: #e5e3df;
+            --hairline-soft: #ede9e4;
+            --hairline-strong: #c8c4be;
+            --ink-deep: #000000;
+            --ink: #1a1a1a;
+            --charcoal: #37352f;
+            --slate: #5d5b54;
+            --steel: #787671;
+            --stone: #a4a097;
+            --muted: #bbb8b1;
+            --on-dark: #ffffff;
+            --on-dark-muted: #a4a097;
+            --success: #1aae39;
+            --warning: #dd5b00;
+            --error: #e03131;
+            --shadow-soft: 0 18px 48px rgba(7, 15, 36, 0.08);
+            --shadow-strong: 0 28px 70px rgba(7, 15, 36, 0.14);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-full: 9999px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            background:
+                radial-gradient(circle at top left, rgba(123, 63, 242, 0.14), transparent 28%),
+                radial-gradient(circle at 85% 12%, rgba(255, 100, 200, 0.10), transparent 22%),
+                linear-gradient(180deg, #f7f6f2 0%, #f2f0eb 100%);
+        }
+
+        body {
+            min-height: 100vh;
+            color: var(--charcoal);
+            font-family: Inter, "Notion Sans", "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
+            background: linear-gradient(180deg, #f7f6f2 0%, #f2f0eb 100%);
+            overflow-x: auto;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+            background-size: 22px 22px, 22px 22px;
+            opacity: 0.12;
+            mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 90%);
+        }
+
+        .app-shell {
+            position: relative;
+            min-height: 100vh;
+            min-width: 980px;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 10px 24px;
+            background:
+                radial-gradient(circle at top left, rgba(123, 63, 242, 0.22), transparent 28%),
+                radial-gradient(circle at 82% 10%, rgba(255, 100, 200, 0.14), transparent 22%),
+                linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-mid) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--on-dark);
+        }
+
+        .app-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .app-mark {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 auto;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, #ffffff 0%, #ece8fb 100%);
+            color: var(--brand-navy);
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 8px 18px rgba(7, 15, 36, 0.08);
+        }
+
+        .app-brand-copy {
+            display: grid;
+            min-width: 0;
+            justify-content: center;
+        }
+
+        .app-kicker {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .app-title {
+            color: var(--on-dark);
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .toolbar.header-toolbar {
+            margin-left: auto;
+            padding: 0;
+            gap: 12px;
+            flex-wrap: nowrap;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .header-toolbar .toolbar-group {
+            gap: 8px;
+        }
+
+        .header-toolbar .toolbar-label {
+            color: rgba(255, 255, 255, 0.76);
+            font-size: 12px;
+        }
+
+        .header-toolbar .toggle-btn {
+            padding: 6px 10px;
+            border-color: rgba(255, 255, 255, 0.24);
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--on-dark);
+            font-size: 12px;
+        }
+
+        .header-toolbar .toggle-btn.active {
+            color: var(--brand-navy);
+            background: var(--on-dark);
+        }
+
+        .header-toolbar .page-input {
+            width: 58px;
+            padding: 6px 8px;
+            border-color: rgba(255, 255, 255, 0.32);
+            background: rgba(255, 255, 255, 0.96);
+            font-size: 12px;
+        }
+
+        .header-toolbar .zoom-display {
+            width: 152px;
+            padding: 6px 10px;
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--on-dark);
+            font-size: 12px;
+            box-shadow: none;
+        }
+
+        .btn,
+        .toggle-btn,
+        .position-btn,
+        .stamp-item-btn {
+            font-family: inherit;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .btn:hover,
+        .toggle-btn:hover,
+        .position-btn:hover,
+        .stamp-item-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .main-container {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            height: calc(100vh - 66px);
+            min-width: 980px;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            position: relative;
+            flex: 0 0 370px;
+            width: 370px;
+            padding: 24px;
+            overflow-y: auto;
+            height: 100%;
+            border-right: 1px solid var(--hairline);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(246, 245, 244, 0.95)),
+                var(--surface);
+            backdrop-filter: blur(8px);
+        }
+
+        .right-panel {
+            min-width: 0;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(180deg, rgba(250, 249, 246, 0.98), rgba(243, 241, 236, 0.98));
+        }
+
+        .right-panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+            background-size: 24px 24px, 24px 24px;
+            opacity: 0.08;
+            mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 95%);
+        }
+
+        .right-panel > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            position: relative;
+            margin-bottom: 18px;
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--hairline);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: var(--shadow-soft);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-strong);
+            border-color: rgba(200, 196, 190, 0.85);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            margin-bottom: 6px;
+        }
+
+        .card-title::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, var(--primary), var(--brand-pink));
+            box-shadow: 0 0 0 4px rgba(86, 69, 212, 0.08);
+        }
+
+        .card-subtitle {
+            margin-bottom: 16px;
+            color: var(--steel);
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .upload-area {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            gap: 10px;
+            min-height: 160px;
+            padding: 22px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px dashed rgba(200, 196, 190, 0.92);
+            border-radius: 18px;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 249, 247, 0.96));
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+        }
+
+        .upload-area:hover,
+        .upload-area.has-file {
+            transform: translateY(-1px);
+            border-color: rgba(86, 69, 212, 0.45);
+            background:
+                radial-gradient(circle at top right, rgba(255, 100, 200, 0.08), transparent 30%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(242, 239, 252, 0.98));
+            box-shadow: 0 14px 30px rgba(86, 69, 212, 0.1);
+        }
+
+        .upload-icon {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(230, 224, 245, 0.95), rgba(220, 236, 250, 0.92));
+            font-size: 26px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        }
+
+        .upload-text {
+            color: var(--steel);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .upload-text small {
+            display: block;
+            margin-top: 4px;
+            color: var(--stone);
+        }
+
+        #stampUploadArea {
+            min-height: 106px;
+            padding: 14px;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        #pdfUploadArea {
+            min-height: 106px;
+            padding: 14px;
+            gap: 6px;
+        }
+
+        #stampUploadArea .upload-icon,
+        #pdfUploadArea .upload-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            font-size: 20px;
+        }
+
+        #stampUploadArea .upload-text,
+        #pdfUploadArea .upload-text {
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        #stampUploadArea .upload-text small {
+            margin-top: 2px;
+            font-size: 12px;
+        }
+
+        #stampUploadArea.has-preview .upload-icon,
+        #stampUploadArea.has-preview .upload-text {
+            display: none;
+        }
+
+        .upload-preview-image {
+            display: none;
+            max-width: 100%;
+            max-height: 86px;
+            object-fit: contain;
+        }
+
+        #stampUploadArea.has-preview .upload-preview-image {
+            display: block;
+        }
+
+        .preview-container {
+            width: 132px;
+            height: 132px;
+            margin: 18px auto 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 238, 234, 0.95)),
+                repeating-conic-gradient(#ece9e4 0% 25%, #fff 0% 50%) 50% / 12px 12px;
+            border: 1px solid var(--hairline);
+            overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 10px 24px rgba(7, 15, 36, 0.08);
+        }
+
+        .preview-container img,
+        .stamp-item-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 18px;
+            border: 1px solid transparent;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .btn-primary {
+            color: var(--on-primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%);
+            box-shadow: 0 14px 26px rgba(86, 69, 212, 0.26);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 18px 34px rgba(86, 69, 212, 0.32);
+        }
+
+        .btn-primary:disabled {
+            color: var(--muted);
+            background: linear-gradient(135deg, #e6e3df, #ded9d3);
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            color: var(--ink);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(246, 245, 243, 0.98));
+            border-color: var(--hairline-strong);
+        }
+
+        .btn-secondary:hover {
+            border-color: rgba(86, 69, 212, 0.36);
+        }
+
+        .btn-danger {
+            color: #9f1d1d;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 240, 241, 0.96));
+            border-color: rgba(224, 49, 49, 0.28);
+        }
+
+        .btn-danger:hover {
+            border-color: rgba(224, 49, 49, 0.48);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group.hidden-control {
+            display: none;
+        }
+
+        .seal-action-stack {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .seal-action-stack .btn {
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--charcoal);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--hairline-strong);
+            border-radius: 12px;
+            background: var(--canvas);
+            color: var(--ink);
+            font-size: 14px;
+            font-family: inherit;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(86, 69, 212, 0.12);
+        }
+
+        .position-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .position-btn {
+            padding: 10px 12px;
+            border: 1px solid var(--hairline-strong);
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 245, 243, 0.98));
+            cursor: pointer;
+            color: var(--charcoal);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .position-btn:hover {
+            border-color: rgba(86, 69, 212, 0.34);
+        }
+
+        .position-btn.active {
+            color: var(--on-primary);
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+            box-shadow: 0 10px 22px rgba(86, 69, 212, 0.22);
+        }
+
+        .pdf-info {
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(230, 224, 245, 0.5), rgba(220, 236, 250, 0.45));
+            border: 1px solid rgba(86, 69, 212, 0.08);
+        }
+
+        .pdf-info-item {
+            margin-bottom: 6px;
+            color: var(--charcoal);
+            font-size: 13px;
+        }
+
+        .pdf-info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .pdf-info-label {
+            font-weight: 600;
+        }
+
+        #pdfUploadArea .pdf-info {
+            width: 100%;
+            margin: 0;
+            padding: 0 6px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+        }
+
+        #pdfUploadArea .pdf-info-item {
+            margin: 0;
+            color: var(--charcoal);
+            font-size: 12px;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+
+        #pdfUploadArea .pdf-info-label {
+            display: none;
+        }
+
+        .stamp-list {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 8px;
+            scroll-snap-type: x proximity;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(86, 69, 212, 0.45) rgba(200, 196, 190, 0.22);
+        }
+
+        .stamp-list::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .stamp-list::-webkit-scrollbar-track {
+            border-radius: 9999px;
+            background: rgba(200, 196, 190, 0.22);
+        }
+
+        .stamp-list::-webkit-scrollbar-thumb {
+            border-radius: 9999px;
+            background: rgba(86, 69, 212, 0.45);
+        }
+
+        .stamp-item {
+            flex: 0 0 84px;
+            min-height: 102px;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            align-items: center;
+            gap: 6px;
+            padding: 8px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(246, 245, 243, 0.96));
+            border: 1px solid var(--hairline);
+            box-shadow: 0 10px 20px rgba(7, 15, 36, 0.05);
+            scroll-snap-align: start;
+        }
+
+        .stamp-item:not(.empty) {
+            cursor: pointer;
+        }
+
+        .stamp-item:not(.empty):hover {
+            border-color: rgba(86, 69, 212, 0.42);
+            box-shadow: 0 12px 24px rgba(86, 69, 212, 0.1);
+        }
+
+        .stamp-item.active {
+            border-color: rgba(86, 69, 212, 0.55);
+            box-shadow: 0 12px 24px rgba(86, 69, 212, 0.12);
+        }
+
+        .stamp-item.empty {
+            color: var(--stone);
+            background: rgba(255, 255, 255, 0.58);
+            border-style: dashed;
+            box-shadow: none;
+        }
+
+        .stamp-item-preview {
+            width: 100%;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background:
+                linear-gradient(135deg, rgba(230, 224, 245, 0.6), rgba(220, 236, 250, 0.6)),
+                repeating-conic-gradient(#ece9e4 0% 25%, #fff 0% 50%) 50% / 8px 8px;
+            border: 1px solid rgba(200, 196, 190, 0.72);
+            overflow: hidden;
+        }
+
+        .stamp-item.empty .stamp-item-preview {
+            background: rgba(250, 249, 247, 0.85);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .stamp-item-info {
+            min-width: 0;
+            text-align: center;
+        }
+
+        .stamp-item-name {
+            color: var(--ink);
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .stamp-item-size {
+            color: var(--steel);
+            font-size: 10px;
+        }
+
+        .stamp-item-actions {
+            display: grid;
+            gap: 5px;
+        }
+
+        .stamp-item-btn {
+            padding: 5px 0;
+            border: 1px solid transparent;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .stamp-item-btn.delete {
+            color: #9f1d1d;
+            background: transparent;
+            border-color: rgba(224, 49, 49, 0.32);
+        }
+
+        .toolbar {
+            padding: 18px 24px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--hairline);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 245, 243, 0.96));
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.6);
+        }
+
+        .preview-header {
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .preview-toolbar {
+            flex: 1 1 520px;
+            min-width: 0;
+            margin-left: auto;
+            margin-right: 48px;
+            padding: 0;
+            justify-content: flex-end;
+            border-bottom: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+
+        .toolbar-label {
+            color: var(--steel);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .toggle-btn {
+            padding: 8px 14px;
+            border: 1px solid var(--hairline-strong);
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.96);
+            cursor: pointer;
+            color: var(--charcoal);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .toggle-btn.active {
+            color: var(--on-primary);
+            border-color: transparent;
+            background: linear-gradient(135deg, var(--ink-deep), var(--brand-navy-mid));
+        }
+
+        .page-input {
+            width: 72px;
+            padding: 8px 12px;
+            border: 1px solid var(--hairline-strong);
+            border-radius: 12px;
+            background: var(--canvas);
+            color: var(--ink);
+            font-size: 13px;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .page-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(86, 69, 212, 0.12);
+        }
+
+        .zoom-display {
+            width: 170px;
+            padding: 8px 14px;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid var(--hairline);
+            color: var(--charcoal);
+            font-size: 13px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(7, 15, 36, 0.05);
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 24px 14px;
+            border-bottom: 1px solid var(--hairline);
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(10px);
+            flex: 0 0 auto;
+        }
+
+        .left-panel .workspace-header {
+            position: sticky;
+            top: -24px;
+            z-index: 10;
+            margin: -24px -24px 18px;
+            padding: 18px 24px 14px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 245, 244, 0.94)),
+                var(--surface);
+            border-bottom: 1px solid var(--hairline);
+            backdrop-filter: blur(10px);
+        }
+
+        .workspace-eyebrow {
+            color: var(--steel);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .workspace-title {
+            margin-top: 6px;
+            color: var(--ink);
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+
+        .workspace-hint {
+            padding: 10px 14px;
+            border-radius: 9999px;
+            background: rgba(230, 224, 245, 0.7);
+            color: var(--brand-navy);
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(86, 69, 212, 0.08);
+        }
+
+        .pdf-container {
+            flex: 1;
+            overflow: auto;
+            min-height: 0;
+            padding: 28px 24px 36px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            background: linear-gradient(180deg, rgba(250, 249, 246, 0.98), rgba(242, 239, 234, 0.98));
+        }
+
+        .pdf-pages {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 26px;
+            width: min(100%, 1180px);
+        }
+
+        .pdf-page-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 14px;
+            background: var(--canvas);
+            border: 1px solid var(--hairline);
+            box-shadow: 0 14px 30px rgba(7, 15, 36, 0.10);
+        }
+
+        .pdf-page {
+            display: block;
+        }
+
+        .page-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .page-info {
+            position: absolute;
+            left: 50%;
+            bottom: -34px;
+            transform: translateX(-50%);
+            padding: 6px 14px;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid var(--hairline);
+            color: var(--steel);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 10px 20px rgba(7, 15, 36, 0.06);
+        }
+
+        .coordinate-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .coordinate-reference-point {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff2d2d;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 0 2px rgba(255, 45, 45, 0.35), 0 2px 6px rgba(7, 15, 36, 0.25);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 8;
+        }
+
+        .stamp-indicator {
+            position: absolute;
+            pointer-events: auto;
+            cursor: move;
+        }
+
+        .stamp-indicator img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(7, 15, 36, 0.54);
+            backdrop-filter: blur(10px);
+        }
+
+        .loading-box {
+            min-width: 260px;
+            padding: 34px 40px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            text-align: center;
+            box-shadow: var(--shadow-strong);
+        }
+
+        .loading-spinner {
+            width: 46px;
+            height: 46px;
+            margin: 0 auto 18px;
+            border: 4px solid rgba(86, 69, 212, 0.12);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 720px) {
+            .app-header,
+            .left-panel,
+            .workspace-header,
+            .toolbar,
+            .pdf-container {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .app-header {
+                gap: 12px;
+            }
+
+            .workspace-title {
+                font-size: 17px;
+            }
+
+            .preview-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .preview-toolbar {
+                width: 100%;
+                margin-left: 0;
+                margin-right: 0;
+                justify-content: flex-start;
+            }
+
+            .position-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .stamp-item {
+                align-items: center;
+            }
+
+            .stamp-item-actions {
+                justify-content: initial;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="app-brand">
+                <div class="app-mark">N</div>
+                <div class="app-brand-copy">
+                    <div class="app-title">PDF 盖章工具</div>
+                </div>
+            </div>
+            <div class="toolbar header-toolbar" aria-label="预览工具">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">坐标系：</span>
+                    <button class="toggle-btn" id="toggleCoordinate">显示/隐藏</button>
+                </div>
+                <div class="toolbar-group">
+                    <span class="toolbar-label">页码：</span>
+                    <input type="number" class="page-input" id="gotoPage" value="1" min="1">
+                    <span class="toolbar-label">/ <span id="totalPages">0</span></span>
+                </div>
+                <div class="toolbar-group">
+                    <span class="toolbar-label">当前坐标：</span>
+                    <span class="zoom-display" id="currentCoord">X: 0mm, Y: 0mm</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <aside class="left-panel">
+            <div class="card">
+                <div class="card-title">印章 (Stamp)</div>
+                <div class="upload-area" id="stampUploadArea">
+                    <div class="upload-icon">🔐</div>
+                    <div class="upload-text">拖拽或点击上传 PNG 印章<br><small>（透明背景）</small></div>
+                    <img class="upload-preview-image" id="stampUploadPreview" alt="当前印章预览">
+                </div>
+                <div class="preview-container hidden" id="stampPreviewContainer">
+                    <img id="stampPreview" alt="印章预览">
+                </div>
+                <input type="file" id="stampInput" accept="image/png" style="display:none">
+                <div id="stampList" class="stamp-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">文件 (PDF)</div>
+                <div class="upload-area" id="pdfUploadArea">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">拖拽或点击上传 PDF 文件</div>
+                    <div id="pdfInfo" class="pdf-info hidden">
+                        <div class="pdf-info-item"><span class="pdf-info-label">文件名：</span><span id="pdfFileName"></span></div>
+                    </div>
+                </div>
+                <input type="file" id="pdfInput" accept="application/pdf" style="display:none">
+            </div>
+
+            <div class="card">
+                <div class="card-title">盖章设置</div>
+                <div class="input-group hidden-control">
+                    <label class="input-label">盖章页码</label>
+                    <input type="number" class="input-field" id="singlePageNum" value="1" min="1">
+                </div>
+                <div class="input-group hidden-control">
+                    <label class="input-label">X 坐标 (mm)</label>
+                    <input type="number" class="input-field" id="singleX" value="100" min="0">
+                </div>
+                <div class="input-group hidden-control">
+                    <label class="input-label">Y 坐标 (mm)</label>
+                    <input type="number" class="input-field" id="singleY" value="100" min="0">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">印章尺寸 (mm)</label>
+                    <input type="number" class="input-field" id="stampedHeight" value="40" min="10" max="200">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">骑缝章位置</label>
+                    <div class="position-selector">
+                        <button class="position-btn" data-position="0.33">右侧 1/3</button>
+                        <button class="position-btn active" data-position="0.5">中间 1/2</button>
+                        <button class="position-btn" data-position="0.67">右侧 2/3</button>
+                    </div>
+                </div>
+                <div class="seal-action-stack">
+                    <button class="btn btn-primary" id="generateStampsBtn" disabled>骑缝章</button>
+                    <button class="btn btn-primary" id="addSingleStampBtn" disabled>完整章</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">操作区</div>
+                <button class="btn btn-danger" id="clearAllBtn" disabled>清空所有印章</button>
+                <button class="btn btn-primary" id="exportPdfBtn" disabled style="margin-top:12px;">导出 PDF</button>
+            </div>
+            </aside>
+
+            <section class="right-panel">
+            <div class="pdf-container" id="pdfContainer">
+                <div class="pdf-pages" id="pdfPages"></div>
+            </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-box">
+            <div class="loading-spinner"></div>
+            <div id="loadingText">处理中...</div>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const state = {
+            stamps: [],
+            currentStamp: null,
+            pdfDoc: null,
+            pdfArrayBuffer: null,
+            pdfBytes: null,
+            pdfFileName: null,
+            pageCount: 0,
+            pageInfos: [],
+            stampsOnPages: [],
+            showCoordinate: false,
+            stampPosition: 0.5,
+            scale: 1,
+            dpi: 96,
+            coordinateLocked: false,
+            coordinateReferencePoint: null
+        };
+
+        const MM_PER_INCH = 25.4;
+        const MAX_STAMP_SLOTS = 9;
+        const stampUploadArea = document.getElementById('stampUploadArea');
+        const stampInput = document.getElementById('stampInput');
+        const stampPreviewContainer = document.getElementById('stampPreviewContainer');
+        const stampPreview = document.getElementById('stampPreview');
+        const stampUploadPreview = document.getElementById('stampUploadPreview');
+        const stampList = document.getElementById('stampList');
+        const pdfUploadArea = document.getElementById('pdfUploadArea');
+        const pdfInput = document.getElementById('pdfInput');
+        const pdfPages = document.getElementById('pdfPages');
+        const pdfInfo = document.getElementById('pdfInfo');
+        const generateStampsBtn = document.getElementById('generateStampsBtn');
+        const addSingleStampBtn = document.getElementById('addSingleStampBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const toggleCoordinateBtn = document.getElementById('toggleCoordinate');
+        const pdfContainer = document.getElementById('pdfContainer');
+        const gotoPageInput = document.getElementById('gotoPage');
+        const singlePageNumInput = document.getElementById('singlePageNum');
+        const singleXInput = document.getElementById('singleX');
+        const singleYInput = document.getElementById('singleY');
+        let pageSyncFrame = null;
+
+        function pxToMm(px, dpi = 96) {
+            return px / dpi * MM_PER_INCH;
+        }
+
+        function mmToPx(mm, dpi = 96) {
+            return mm / MM_PER_INCH * dpi;
+        }
+
+        function getScaleForPage(pageWidth, pageHeight) {
+            const container = document.getElementById('pdfContainer');
+            const containerWidth = container.clientWidth - 60;
+            const containerHeight = window.innerHeight - 200;
+            const scaleX = containerWidth / pageWidth;
+            const scaleY = containerHeight / pageHeight;
+            return Math.min(scaleX, scaleY, 1);
+        }
+
+        function loadStampsFromStorage() {
+            try {
+                const saved = localStorage.getItem('pdfStampStamps');
+                if (saved) {
+                    const stamps = JSON.parse(saved);
+                    stamps.slice(0, MAX_STAMP_SLOTS).forEach(data => {
+                        if (data.data) {
+                            state.stamps.push(data);
+                        }
+                    });
+                    if (state.stamps.length > 0) {
+                        state.currentStamp = state.stamps[0];
+                        showStampPreview(state.currentStamp);
+                    }
+                }
+                renderStampList();
+            } catch (e) {
+                console.error('加载印章失败:', e);
+            }
+        }
+
+        function saveStampsToStorage() {
+            try {
+                const toSave = state.stamps.map(s => ({
+                    name: s.name,
+                    size: s.size,
+                    type: s.type,
+                    data: s.data,
+                    width: s.width,
+                    height: s.height
+                }));
+                localStorage.setItem('pdfStampStamps', JSON.stringify(toSave));
+            } catch (e) {
+                console.error('保存印章失败:', e);
+            }
+        }
+
+        function renderStampList() {
+            stampList.innerHTML = '';
+            for (let index = 0; index < MAX_STAMP_SLOTS; index++) {
+                const stamp = state.stamps[index];
+                const item = document.createElement('div');
+                if (stamp) {
+                    item.className = `stamp-item${stamp === state.currentStamp ? ' active' : ''}`;
+                    item.dataset.index = index;
+                    item.setAttribute('role', 'button');
+                    item.setAttribute('tabindex', '0');
+                    item.innerHTML = `
+                        <div class="stamp-item-preview">
+                            <img src="${stamp.data}" alt="${stamp.name}">
+                        </div>
+                        <div class="stamp-item-info">
+                            <div class="stamp-item-name">${stamp.name}</div>
+                            <div class="stamp-item-size">${(stamp.size / 1024).toFixed(1)} KB</div>
+                        </div>
+                        <div class="stamp-item-actions">
+                            <button class="stamp-item-btn delete" data-index="${index}">删除</button>
+                        </div>
+                    `;
+                } else {
+                    item.className = 'stamp-item empty';
+                    item.innerHTML = `
+                        <div class="stamp-item-preview">空位</div>
+                        <div class="stamp-item-info">
+                            <div class="stamp-item-name">印章${index + 1}</div>
+                        </div>
+                    `;
+                }
+                stampList.appendChild(item);
+            }
+
+            stampList.querySelectorAll('.stamp-item:not(.empty)').forEach(item => {
+                const selectStamp = () => {
+                    const index = parseInt(item.dataset.index);
+                    state.currentStamp = state.stamps[index];
+                    showStampPreview(state.currentStamp);
+                    renderStampList();
+                };
+
+                item.addEventListener('mousedown', selectStamp);
+                item.addEventListener('click', selectStamp);
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectStamp();
+                    }
+                });
+            });
+
+            stampList.querySelectorAll('.delete').forEach(btn => {
+                btn.addEventListener('mousedown', (e) => {
+                    e.stopPropagation();
+                });
+
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(e.target.dataset.index);
+                    state.stamps.splice(index, 1);
+                    saveStampsToStorage();
+                    renderStampList();
+                    if (state.stamps.length > 0) {
+                        state.currentStamp = state.stamps[0];
+                        showStampPreview(state.currentStamp);
+                    } else {
+                        state.currentStamp = null;
+                        stampPreviewContainer.classList.add('hidden');
+                        stampUploadArea.classList.remove('has-file');
+                        stampUploadArea.classList.remove('has-preview');
+                        stampUploadPreview.removeAttribute('src');
+                    }
+                });
+            });
+        }
+
+        function showStampPreview(stamp) {
+            if (!stamp) return;
+            stampPreview.src = stamp.data;
+            stampUploadPreview.src = stamp.data;
+            stampPreviewContainer.classList.add('hidden');
+            stampUploadArea.classList.add('has-file');
+            stampUploadArea.classList.add('has-preview');
+        }
+
+        stampUploadArea.addEventListener('click', () => stampInput.click());
+        stampInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            await loadStampFile(file);
+        });
+
+        // 拖拽上传印章
+        stampUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            stampUploadArea.style.borderColor = 'var(--primary)';
+            stampUploadArea.style.background = 'rgba(242, 239, 255, 0.98)';
+        });
+
+        stampUploadArea.addEventListener('dragleave', () => {
+            stampUploadArea.style.borderColor = 'rgba(200, 196, 190, 0.92)';
+            stampUploadArea.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 249, 247, 0.96))';
+        });
+
+        stampUploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            stampUploadArea.style.borderColor = 'rgba(200, 196, 190, 0.92)';
+            stampUploadArea.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 249, 247, 0.96))';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'image/png') {
+                await loadStampFile(file);
+            } else {
+                alert('请上传 PNG 格式的印章文件');
+            }
+        });
+
+        async function loadStampFile(file) {
+            return new Promise((resolve) => {
+                if (state.stamps.length >= MAX_STAMP_SLOTS) {
+                    alert(`最多只能缓存 ${MAX_STAMP_SLOTS} 个印章，请先删除一个再上传。`);
+                    resolve();
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let data = e.target.result;
+                        const maxSize = 800;
+                        if (img.width > maxSize || img.height > maxSize) {
+                            const canvas = document.createElement('canvas');
+                            const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+                            canvas.width = img.width * ratio;
+                            canvas.height = img.height * ratio;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            data = canvas.toDataURL('image/png', 0.9);
+                        }
+                        const stamp = {
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            data: data,
+                            width: img.width,
+                            height: img.height
+                        };
+                        state.stamps.push(stamp);
+                        state.currentStamp = stamp;
+                        saveStampsToStorage();
+                        renderStampList();
+                        showStampPreview(stamp);
+                        stampUploadArea.classList.add('has-file');
+                        updateButtons();
+                        resolve();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        pdfUploadArea.addEventListener('click', () => pdfInput.click());
+        pdfInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            await loadPDFFile(file);
+        });
+
+        // 拖拽上传 PDF
+        pdfUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = 'var(--primary)';
+            pdfUploadArea.style.background = 'rgba(242, 239, 255, 0.98)';
+        });
+
+        pdfUploadArea.addEventListener('dragleave', () => {
+            pdfUploadArea.style.borderColor = 'rgba(200, 196, 190, 0.92)';
+            pdfUploadArea.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 249, 247, 0.96))';
+        });
+
+        pdfUploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = 'rgba(200, 196, 190, 0.92)';
+            pdfUploadArea.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 249, 247, 0.96))';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                await loadPDFFile(file);
+            } else {
+                alert('请上传 PDF 格式的文件');
+            }
+        });
+
+        async function loadPDFFile(file) {
+            showLoading('正在加载 PDF...');
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                console.log('加载 PDF 大小:', arrayBuffer.byteLength);
+                
+                // 先保存原始 ArrayBuffer
+                state.pdfArrayBuffer = arrayBuffer;
+                
+                // 然后创建 Uint8Array 视图
+                state.pdfBytes = new Uint8Array(arrayBuffer.slice());
+                
+                state.pdfDoc = await pdfjsLib.getDocument({ data: state.pdfBytes }).promise;
+                state.pageCount = state.pdfDoc.numPages;
+                state.stampsOnPages = [];
+                state.pdfFileName = file.name;
+                state.coordinateLocked = false;
+                state.coordinateReferencePoint = null;
+                pdfUploadArea.classList.add('has-file');
+
+                document.getElementById('pdfFileName').textContent = file.name;
+                document.getElementById('totalPages').textContent = state.pageCount;
+                singlePageNumInput.max = state.pageCount;
+                gotoPageInput.max = state.pageCount;
+                syncPageInputs(1);
+                pdfInfo.classList.remove('hidden');
+
+                await renderAllPages();
+                updatePageInputsFromPreview();
+                updateButtons();
+            } catch (e) {
+                alert('PDF 加载失败: ' + e.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function renderAllPages() {
+            pdfPages.innerHTML = '';
+            state.pageInfos = [];
+
+            for (let i = 1; i <= state.pageCount; i++) {
+                await renderPage(i);
+            }
+        }
+
+        async function renderPage(pageNum) {
+            const page = await state.pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1 });
+
+            const pageWidthMm = pxToMm(viewport.width, 72);
+            const pageHeightMm = pxToMm(viewport.height, 72);
+
+            const displayScale = getScaleForPage(viewport.width, viewport.height);
+            const displayViewport = page.getViewport({ scale: displayScale });
+
+            state.scale = displayScale;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'pdf-page-wrapper';
+            wrapper.id = `page-${pageNum}`;
+            wrapper.style.width = displayViewport.width + 'px';
+            wrapper.style.height = displayViewport.height + 'px';
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'pdf-page';
+            canvas.width = displayViewport.width;
+            canvas.height = displayViewport.height;
+            canvas.dataset.pageNum = pageNum;
+
+            const ctx = canvas.getContext('2d');
+            await page.render({
+                canvasContext: ctx,
+                viewport: displayViewport
+            }).promise;
+
+            const overlay = document.createElement('div');
+            overlay.className = 'page-overlay';
+            overlay.style.width = displayViewport.width + 'px';
+            overlay.style.height = displayViewport.height + 'px';
+            overlay.dataset.pageNum = pageNum;
+
+            if (state.showCoordinate) {
+                drawRuler(overlay, displayViewport.width, displayViewport.height, viewport.width, viewport.height);
+                drawGrid(overlay, displayViewport.width, displayViewport.height, viewport.width, viewport.height);
+            }
+
+            const pageInfo = document.createElement('div');
+            pageInfo.className = 'page-info';
+            pageInfo.textContent = `第 ${pageNum} 页 | ${pageWidthMm.toFixed(1)} × ${pageHeightMm.toFixed(1)} mm`;
+
+            wrapper.appendChild(canvas);
+            wrapper.appendChild(overlay);
+            wrapper.appendChild(pageInfo);
+
+            state.pageInfos[pageNum] = {
+                width: viewport.width,
+                height: viewport.height,
+                displayWidth: displayViewport.width,
+                displayHeight: displayViewport.height,
+                scale: displayScale,
+                widthMm: pageWidthMm,
+                heightMm: pageHeightMm
+            };
+
+            const updateCoord = (e) => {
+                const rect = wrapper.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const xMm = pxToMm(x / displayScale, 72); // 使用PDF的72 DPI，与实际尺寸一致
+                const yMm = pxToMm(y / displayScale, 72);
+                document.getElementById('currentCoord').textContent =
+                    `X: ${xMm.toFixed(1)}mm, Y: ${yMm.toFixed(1)}mm`;
+                if (!state.coordinateLocked) {
+                    setSingleStampTarget(pageNum, xMm, yMm);
+                }
+            };
+
+            const lockCoord = (e) => {
+                const rect = wrapper.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+
+                const xMm = pxToMm(x / displayScale, 72);
+                const yMm = pxToMm(y / displayScale, 72);
+                state.coordinateLocked = true;
+                document.getElementById('currentCoord').textContent =
+                    `X: ${xMm.toFixed(1)}mm, Y: ${yMm.toFixed(1)}mm`;
+                setSingleStampTarget(pageNum, xMm, yMm);
+                setCoordinateReferencePoint(pageNum, xMm, yMm);
+            };
+
+            wrapper.addEventListener('mousemove', updateCoord);
+            wrapper.addEventListener('click', lockCoord);
+            wrapper.addEventListener('mouseleave', () => {
+                document.getElementById('currentCoord').textContent = 'X: --, Y: --';
+            });
+
+            pdfPages.appendChild(wrapper);
+            renderCoordinateReferencePoint(pageNum);
+        }
+
+        function syncPageInputs(pageNum) {
+            if (!pageNum || pageNum < 1 || pageNum > state.pageCount) return;
+            const value = String(pageNum);
+            gotoPageInput.value = value;
+            singlePageNumInput.value = value;
+        }
+
+        function setSingleStampTarget(pageNum, xMm, yMm) {
+            syncPageInputs(pageNum);
+            singleXInput.value = xMm.toFixed(1);
+            singleYInput.value = yMm.toFixed(1);
+        }
+
+        function setCoordinateReferencePoint(pageNum, xMm, yMm) {
+            state.coordinateReferencePoint = { pageNum, xMm, yMm };
+            document.querySelectorAll('.coordinate-reference-point').forEach(point => point.remove());
+            renderCoordinateReferencePoint(pageNum);
+        }
+
+        function clearCoordinateReferencePoint() {
+            state.coordinateReferencePoint = null;
+            document.querySelectorAll('.coordinate-reference-point').forEach(point => point.remove());
+        }
+
+        function renderCoordinateReferencePoint(pageNum) {
+            const point = state.coordinateReferencePoint;
+            if (!point || point.pageNum !== pageNum) return;
+
+            const overlay = document.querySelector(`.page-overlay[data-page-num="${pageNum}"]`);
+            const pageInfo = state.pageInfos[pageNum];
+            if (!overlay || !pageInfo) return;
+
+            const marker = document.createElement('div');
+            marker.className = 'coordinate-reference-point';
+            marker.style.left = (mmToPx(point.xMm, 72) * pageInfo.scale) + 'px';
+            marker.style.top = (mmToPx(point.yMm, 72) * pageInfo.scale) + 'px';
+            overlay.appendChild(marker);
+        }
+
+        function getCurrentPreviewPage() {
+            if (!state.pdfDoc || state.pageCount === 0) return null;
+
+            const containerRect = pdfContainer.getBoundingClientRect();
+            const targetY = containerRect.top + Math.min(containerRect.height * 0.3, 180);
+            let closestPage = null;
+            let closestDistance = Infinity;
+
+            document.querySelectorAll('.pdf-page-wrapper').forEach((pageEl) => {
+                const rect = pageEl.getBoundingClientRect();
+                if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) return;
+
+                const distance = Math.abs(rect.top - targetY);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestPage = parseInt(pageEl.id.replace('page-', ''), 10);
+                }
+            });
+
+            return closestPage;
+        }
+
+        function updatePageInputsFromPreview() {
+            if (state.coordinateLocked) return;
+            const currentPage = getCurrentPreviewPage();
+            if (currentPage) syncPageInputs(currentPage);
+        }
+
+        function schedulePageInputSync() {
+            if (pageSyncFrame) cancelAnimationFrame(pageSyncFrame);
+            pageSyncFrame = requestAnimationFrame(() => {
+                pageSyncFrame = null;
+                updatePageInputsFromPreview();
+            });
+        }
+
+        function drawRuler(overlay, width, height, pageWidth, pageHeight) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'coordinate-overlay');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.style.position = 'absolute';
+            svg.style.top = '0';
+            svg.style.left = '0';
+
+            const tickColor = '#999';
+            const textColor = '#666';
+            const fontSize = 10;
+
+            // 计算实际页面宽度和高度（毫米）
+            const actualPageWidthMm = pxToMm(pageWidth, 72);
+            const actualPageHeightMm = pxToMm(pageHeight, 72);
+
+            // 计算每毫米对应的显示像素
+            const mmPerPx = actualPageWidthMm / width;
+
+            // 绘制水平标尺（顶部）
+            for (let mm = 0; mm <= actualPageWidthMm; mm += 10) {
+                const x = mm / mmPerPx;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', 0);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', mm % 50 === 0 ? 20 : 10);
+                line.setAttribute('stroke', tickColor);
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+
+                if (mm % 50 === 0) {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', x + 2);
+                    text.setAttribute('y', 25);
+                    text.setAttribute('fill', textColor);
+                    text.setAttribute('font-size', fontSize);
+                    text.textContent = mm;
+                    svg.appendChild(text);
+                }
+            }
+
+            // 绘制垂直标尺（左侧）
+            for (let mm = 0; mm <= actualPageHeightMm; mm += 10) {
+                const y = mm / mmPerPx;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', 0);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', mm % 50 === 0 ? 20 : 10);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', tickColor);
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+
+                if (mm % 50 === 0) {
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', 2);
+                    text.setAttribute('y', y + 12);
+                    text.setAttribute('fill', textColor);
+                    text.setAttribute('font-size', fontSize);
+                    text.textContent = mm;
+                    svg.appendChild(text);
+                }
+            }
+
+            overlay.appendChild(svg);
+        }
+
+        function drawGrid(overlay, width, height, pageWidth, pageHeight) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'coordinate-overlay');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.style.position = 'absolute';
+            svg.style.top = '0';
+            svg.style.left = '0';
+
+            // 计算实际页面宽度和高度（毫米）
+            const actualPageWidthMm = pxToMm(pageWidth, 72);
+            const actualPageHeightMm = pxToMm(pageHeight, 72);
+
+            // 计算每毫米对应的显示像素
+            const mmPerPx = actualPageWidthMm / width;
+
+            // 绘制垂直网格线
+            for (let mm = 0; mm <= actualPageWidthMm; mm += 10) {
+                const x = mm / mmPerPx;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', 0);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', height);
+                line.setAttribute('stroke', '#ddd');
+                line.setAttribute('stroke-width', mm % 50 === 0 ? '1' : '0.5');
+                svg.appendChild(line);
+            }
+
+            // 绘制水平网格线
+            for (let mm = 0; mm <= actualPageHeightMm; mm += 10) {
+                const y = mm / mmPerPx;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', 0);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#ddd');
+                line.setAttribute('stroke-width', mm % 50 === 0 ? '1' : '0.5');
+                svg.appendChild(line);
+            }
+
+            overlay.appendChild(svg);
+        }
+
+        document.querySelectorAll('.position-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.position-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                state.stampPosition = parseFloat(e.target.dataset.position);
+            });
+        });
+
+        generateStampsBtn.addEventListener('click', async () => {
+            if (!state.currentStamp || !state.pdfDoc || state.pageCount === 0) {
+                alert('请先加载PDF和印章');
+                return;
+            }
+
+            showLoading('正在生成骑缝章...');
+            try {
+                const stampHeightMm = parseFloat(document.getElementById('stampedHeight').value) || 40;
+                const position = state.stampPosition;
+
+                const fullStampImg = await loadImage(state.currentStamp.data);
+                const stampAspect = fullStampImg.width / fullStampImg.height;
+                const stampWidthMm = stampHeightMm * stampAspect;
+
+                state.stampsOnPages = state.stampsOnPages.filter(stamp => !stamp.isSaddle);
+
+                for (let pageNum = 1; pageNum <= state.pageCount; pageNum++) {
+                    const pageInfo = state.pageInfos[pageNum];
+                    const segmentIndex = pageNum - 1;
+
+                    // 计算骑缝章在PDF中的实际尺寸
+                    const segmentWidthMm = stampWidthMm / state.pageCount;
+                    
+                    // 计算骑缝章在页面上的位置
+                    const xMm = pageInfo.widthMm - segmentWidthMm;
+                    const yMm = pageInfo.heightMm * state.stampPosition - stampHeightMm / 2;
+
+                    // 计算预览位置
+                    const segmentWidthPx = (segmentWidthMm / 25.4) * 72;
+                    const segmentHeightPx = (stampHeightMm / 25.4) * 72;
+                    const displayWidthPx = segmentWidthPx * pageInfo.scale;
+                    const displayHeightPx = segmentHeightPx * pageInfo.scale;
+                    const displayXPx = (xMm / 25.4) * 72 * pageInfo.scale;
+                    const displayYPx = (yMm / 25.4) * 72 * pageInfo.scale;
+
+                    console.log('骑缝章预览坐标:', {
+                        pageNum: pageNum,
+                        xMm: xMm,
+                        yMm: yMm,
+                        displayXPx: displayXPx,
+                        displayYPx: displayYPx,
+                        displayWidth: displayWidthPx,
+                        displayHeight: displayHeightPx,
+                        pageScale: pageInfo.scale
+                    });
+
+                    state.stampsOnPages.push({
+                        pageNum: pageNum,
+                        data: state.currentStamp.data, // 直接使用原始印章数据，避免质量损失
+                        xMm: xMm,
+                        yMm: yMm,
+                        widthMm: segmentWidthMm,
+                        heightMm: stampHeightMm,
+                        displayX: displayXPx,
+                        displayY: displayYPx,
+                        displayWidth: displayWidthPx,
+                        displayHeight: displayHeightPx,
+                        isSaddle: true,
+                        segmentIndex: segmentIndex,
+                        totalPages: state.pageCount
+                    });
+                }
+
+                renderStampsOnPages();
+                updateButtons();
+            } catch (e) {
+                alert('生成骑缝章失败: ' + e.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        addSingleStampBtn.addEventListener('click', () => {
+            if (!state.currentStamp || !state.pdfDoc) return;
+
+            const pageNum = parseInt(singlePageNumInput.value);
+            const xMm = parseFloat(singleXInput.value);
+            const yMm = parseFloat(singleYInput.value);
+            const sizeMm = parseFloat(document.getElementById('stampedHeight').value) || 40;
+
+            if (pageNum < 1 || pageNum > state.pageCount) {
+                alert('页码超出范围');
+                return;
+            }
+
+            const pageInfo = state.pageInfos[pageNum];
+            const stampAspect = state.currentStamp.width / state.currentStamp.height;
+            const stampWidthMm = sizeMm * stampAspect;
+
+            // 使用PDF的72 DPI计算预览位置，与标尺和实际尺寸一致
+            // 以中心点为参考，输入的坐标是中心点的坐标
+            const displayWidthPx = (stampWidthMm / 25.4) * 72 * pageInfo.scale;
+            const displayHeightPx = (sizeMm / 25.4) * 72 * pageInfo.scale;
+            const displayXPx = (xMm / 25.4) * 72 * pageInfo.scale - displayWidthPx / 2;
+            const displayYPx = (yMm / 25.4) * 72 * pageInfo.scale - displayHeightPx / 2;
+
+            state.stampsOnPages.push({
+                pageNum: pageNum,
+                data: state.currentStamp.data,
+                xMm: xMm,
+                yMm: yMm,
+                widthMm: stampWidthMm,
+                heightMm: sizeMm,
+                displayX: displayXPx,
+                displayY: displayYPx,
+                displayWidth: displayWidthPx,
+                displayHeight: displayHeightPx,
+                isSingle: true
+            });
+
+            clearCoordinateReferencePoint();
+            renderStampsOnPages();
+            updateButtons();
+        });
+
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        async function savePdfToDesktop(blob, outputFileName) {
+            if (window.showSaveFilePicker) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: outputFileName,
+                        startIn: 'desktop',
+                        types: [{
+                            description: 'PDF 文件',
+                            accept: { 'application/pdf': ['.pdf'] }
+                        }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return true;
+                } catch (e) {
+                    if (e.name === 'AbortError') return false;
+                }
+            }
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = outputFileName;
+            a.click();
+            URL.revokeObjectURL(url);
+            return true;
+        }
+
+        function renderStampsOnPages() {
+            document.querySelectorAll('.stamp-indicator').forEach(el => el.remove());
+
+            state.stampsOnPages.forEach((stamp, index) => {
+                const overlay = document.querySelector(`.page-overlay[data-page-num="${stamp.pageNum}"]`);
+                if (!overlay) return;
+
+                const indicator = document.createElement('div');
+                indicator.className = 'stamp-indicator';
+                indicator.style.left = stamp.displayX + 'px';
+                indicator.style.top = stamp.displayY + 'px';
+                indicator.style.width = stamp.displayWidth + 'px';
+                indicator.style.height = stamp.displayHeight + 'px';
+                indicator.style.overflow = 'hidden'; // 用于裁剪骑缝章预览
+                indicator.dataset.stampIndex = index;
+
+                if (stamp.isSaddle) {
+                    // 骑缝章预览：使用canvas裁剪显示
+                    const canvas = document.createElement('canvas');
+                    canvas.width = stamp.displayWidth;
+                    canvas.height = stamp.displayHeight;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 设置canvas的图像渲染质量
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.webkitImageSmoothingEnabled = true;
+                    ctx.mozImageSmoothingEnabled = true;
+                    ctx.msImageSmoothingEnabled = true;
+
+                    const img = new Image();
+                    img.onload = () => {
+                        const srcX = (stamp.segmentIndex / stamp.totalPages) * img.width;
+                        const srcWidth = img.width / stamp.totalPages;
+                        
+                        ctx.drawImage(img,
+                            srcX, 0, srcWidth, img.height,
+                            0, 0, stamp.displayWidth, stamp.displayHeight
+                        );
+                    };
+                    img.src = stamp.data;
+                    
+                    indicator.appendChild(canvas);
+                } else {
+                    // 完整章预览：直接显示
+                    const img = document.createElement('img');
+                    img.src = stamp.data;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'contain';
+                    indicator.appendChild(img);
+                }
+
+                makeDraggable(indicator, stamp);
+                overlay.appendChild(indicator);
+            });
+        }
+
+        function makeDraggable(element, stamp) {
+            let isDragging = false;
+            let startX, startY, origX, origY;
+
+            element.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                origX = element.offsetLeft;
+                origY = element.offsetTop;
+                element.style.opacity = '0.7';
+                e.stopPropagation();
+            });
+
+            element.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                element.style.left = (origX + dx) + 'px';
+                element.style.top = (origY + dy) + 'px';
+            });
+
+            document.addEventListener('mouseup', (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                element.style.opacity = '1';
+
+                const pageInfo = state.pageInfos[stamp.pageNum];
+                const leftMm = pxToMm(element.offsetLeft / pageInfo.scale, 72);
+                const topMm = pxToMm(element.offsetTop / pageInfo.scale, 72);
+
+                stamp.displayX = element.offsetLeft;
+                stamp.displayY = element.offsetTop;
+                if (stamp.isSaddle) {
+                    stamp.xMm = leftMm;
+                    stamp.yMm = topMm;
+                } else {
+                    stamp.xMm = leftMm + stamp.widthMm / 2;
+                    stamp.yMm = topMm + stamp.heightMm / 2;
+                }
+            });
+        }
+
+        async function drawStampOnExportCanvas(ctx, stamp, outputScale) {
+            const img = await loadImage(stamp.data);
+            const widthPx = stamp.widthMm / MM_PER_INCH * 72 * outputScale;
+            const heightPx = stamp.heightMm / MM_PER_INCH * 72 * outputScale;
+            let leftPx;
+            let topPx;
+
+            if (stamp.isSaddle) {
+                leftPx = stamp.xMm / MM_PER_INCH * 72 * outputScale;
+                topPx = stamp.yMm / MM_PER_INCH * 72 * outputScale;
+                const srcX = (stamp.segmentIndex / stamp.totalPages) * img.width;
+                const srcWidth = img.width / stamp.totalPages;
+                ctx.drawImage(
+                    img,
+                    srcX, 0, srcWidth, img.height,
+                    leftPx, topPx, widthPx, heightPx
+                );
+                return;
+            }
+
+            leftPx = stamp.xMm / MM_PER_INCH * 72 * outputScale - widthPx / 2;
+            topPx = stamp.yMm / MM_PER_INCH * 72 * outputScale - heightPx / 2;
+            ctx.drawImage(img, leftPx, topPx, widthPx, heightPx);
+        }
+
+        clearAllBtn.addEventListener('click', () => {
+            state.stampsOnPages = [];
+            renderStampsOnPages();
+            updateButtons();
+        });
+
+        exportPdfBtn.addEventListener('click', async () => {
+            if (!state.pdfArrayBuffer || state.stampsOnPages.length === 0) {
+                alert('请先加载PDF并添加印章');
+                return;
+            }
+
+            showLoading('正在导出 PDF...');
+            try {
+                const processedPdfDoc = await PDFLib.PDFDocument.create();
+                const outputScale = 2;
+                
+                // 转换每一页为图片
+                for (let i = 1; i <= state.pageCount; i++) {
+                    const page = await state.pdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: outputScale }); // 使用2倍缩放提高质量
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 设置高质量渲染
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.webkitImageSmoothingEnabled = true;
+                    ctx.mozImageSmoothingEnabled = true;
+                    ctx.msImageSmoothingEnabled = true;
+                    
+                    await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    }).promise;
+
+                    const pageStamps = state.stampsOnPages.filter(stamp => stamp.pageNum === i);
+                    for (const stamp of pageStamps) {
+                        await drawStampOnExportCanvas(ctx, stamp, outputScale);
+                    }
+                    
+                    // 将canvas转换为PNG
+                    const pngData = canvas.toDataURL('image/png', 1.0);
+                    const pngBytes = await fetch(pngData).then(res => res.arrayBuffer());
+                    
+                    // 嵌入图片到PDF
+                    const pngImage = await processedPdfDoc.embedPng(pngBytes);
+                    const pdfPage = processedPdfDoc.addPage([viewport.width, viewport.height]);
+                    
+                    // 绘制图片到页面
+                    pdfPage.drawImage(pngImage, {
+                        x: 0,
+                        y: 0,
+                        width: viewport.width,
+                        height: viewport.height
+                    });
+                }
+                
+                // 保存图片PDF
+                const imagePdfBytes = await processedPdfDoc.save();
+                
+                // 生成文件名：（已盖章）+源文件名
+                const originalFileName = state.pdfFileName || 'document.pdf';
+                const fileNameWithoutExt = originalFileName.replace(/\.[^/.]+$/, '');
+                const outputFileName = '（已盖章）' + fileNameWithoutExt + '.pdf';
+                
+                const blob = new Blob([imagePdfBytes], { type: 'application/pdf' });
+                const saved = await savePdfToDesktop(blob, outputFileName);
+                if (!saved) return;
+
+                alert('导出成功！PDF已转换为图片格式，内容不可编辑。');
+            } catch (e) {
+                console.error('导出失败:', e);
+                console.error('错误堆栈:', e.stack);
+                console.error('PDF 字节大小:', state.pdfBytes ? state.pdfBytes.length : 'null');
+                alert('导出失败: ' + e.message + '\n\n请查看浏览器控制台获取详细错误信息');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        toggleCoordinateBtn.addEventListener('click', () => {
+            state.showCoordinate = !state.showCoordinate;
+            toggleCoordinateBtn.classList.toggle('active', state.showCoordinate);
+            if (state.pdfDoc) renderAllPages().then(renderStampsOnPages);
+        });
+
+        function updateButtons() {
+            const hasStamp = !!state.currentStamp;
+            const hasPdf = !!state.pdfDoc;
+            const hasStamps = state.stampsOnPages.length > 0;
+
+            console.log('更新按钮状态:', {
+                hasStamp: hasStamp,
+                hasPdf: hasPdf,
+                hasStamps: hasStamps
+            });
+            
+            generateStampsBtn.disabled = !hasStamp || !hasPdf;
+            addSingleStampBtn.disabled = !hasStamp || !hasPdf;
+            clearAllBtn.disabled = !hasStamps;
+            exportPdfBtn.disabled = !hasPdf || !hasStamps;
+        }
+
+        function showLoading(text) {
+            loadingText.textContent = text;
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        pdfContainer.addEventListener('scroll', schedulePageInputSync);
+        window.addEventListener('resize', schedulePageInputSync);
+
+        gotoPageInput.addEventListener('change', (e) => {
+            const pageNum = parseInt(e.target.value);
+            if (pageNum >= 1 && pageNum <= state.pageCount) {
+                syncPageInputs(pageNum);
+                const element = document.getElementById(`page-${pageNum}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        });
+
+        loadStampsFromStorage();
+        updateButtons();
+    </script>
+</body>
+</html>
